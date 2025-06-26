@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+
+{% block title %}Reporte de Cirugías{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Reporte Consolidado</h3>
+        </div>
+        
+        <div class="card-body">
+            <form method="POST" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label class="form-label">Fecha Inicio</label>
+                        <input type="date" class="form-control" name="fecha_inicio" required
+                               value="{{ fecha_inicio if fecha_inicio else '' }}">
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label">Fecha Fin</label>
+                        <input type="date" class="form-control" name="fecha_fin" required
+                               value="{{ fecha_fin if fecha_fin else '' }}">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-filter me-1"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            {% if fecha_inicio and fecha_fin %}
+                <div class="alert alert-info mb-4">
+                    <i class="fas fa-calendar-alt me-2"></i>
+                    Mostrando resultados del {{ fecha_inicio }} al {{ fecha_fin }}
+                </div>
+            {% endif %}
+
+            {% if mensaje %}
+                <div class="alert alert-warning">{{ mensaje }}</div>
+            {% else %}
+                <div class="card mb-4 border-success">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-dollar-sign me-2"></i>
+                            Total General: ${{ "{:,.2f}".format(total) }}
+                        </h4>
+                    </div>
+                </div>
+                
+                <div class="row g-4">
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h4><i class="fas fa-user-md me-2"></i>Por Cirujano</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Cirujano</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for cirujano, valor in por_cirujano.items() %}
+                                            <tr>
+                                                <td>{{ cirujano }}</td>
+                                                <td class="text-end">${{ "{:,.2f}".format(valor) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-6">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h4><i class="fas fa-clinic-medical me-2"></i>Por Clínica</h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>Clínica</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for clinica, valor in por_clinica.items() %}
+                                            <tr>
+                                                <td>{{ clinica }}</td>
+                                                <td class="text-end">${{ "{:,.2f}".format(valor) }}</td>
+                                            </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div class="mt-4 text-center">
+                <a href="/" class="btn btn-primary">
+                    <i class="fas fa-home me-1"></i> Volver al Inicio
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabla de registros -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+            <i class="fas fa-history me-2"></i>Registros Históricos (Ordenados del más reciente)
+        </h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>FECHA</th>
+                        <th>PACIENTE</th>
+                        <th>DOCUMENTO</th>
+                        <th>CIRUJANO</th>
+                        <th>CLÍNICA</th>
+                        <th>PROCEDIMIENTO</th>
+                        <th>VALOR</th>
+                        <th>CASA MÉDICA</th>
+                        <th>DOCUMENTOS</th>
+                        <th>ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in registros %}
+                    <tr>
+                        <td>{{ registro.fecha }}</td>
+                        <td>{{ registro.paciente }}</td>
+                        <td>{{ registro.documento }}</td>
+                        <td>{{ registro.cirujano }}</td>
+                        <td>{{ registro.clinica }}</td>
+                        <td>{{ registro.procedimiento }}</td>
+                        <td>{{ registro.valor_formateado }}</td>
+                        <td>{{ registro.casa_medica }}</td>
+                        <td>
+                            {% if registro.documentos %}
+                                {% for doc in registro.documentos %}
+                                    <a href="{{ url_for('static', filename='uploads/' + doc) }}" 
+                                       target="_blank" 
+                                       class="badge bg-info text-decoration-none me-1">
+                                        <i class="fas fa-file me-1"></i>{{ doc[:15] }}...
+                                    </a>
+                                {% endfor %}
+                            {% else %}
+                                <span class="badge bg-secondary">Sin documentos</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{{ url_for('editar_registro', id=registro.id) }}" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                            <a href="{{ url_for('eliminar_registro', id=registro.id) }}" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i> Eliminar
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

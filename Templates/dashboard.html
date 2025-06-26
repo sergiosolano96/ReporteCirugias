@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard Analítico{% endblock %}
+
+{% block content %}
+<!-- Formulario de filtro -->
+<div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+        <h5>Filtrar por fecha</h5>
+    </div>
+    <div class="card-body">
+        <form method="POST" action="{{ url_for('dashboard') }}">
+            <div class="row">
+                <div class="col-md-5">
+                    <label class="form-label">Desde:</label>
+                    <input type="date" name="fecha_inicio" class="form-control" 
+                           value="{{ fecha_inicio if fecha_inicio }}">
+                </div>
+                <div class="col-md-5">
+                    <label class="form-label">Hasta:</label>
+                    <input type="date" name="fecha_fin" class="form-control" 
+                           value="{{ fecha_fin if fecha_fin }}">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Filtrar</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Resumen -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Resumen</h5>
+        {% if fecha_inicio and fecha_fin %}
+        <p>Mostrando datos desde {{ fecha_inicio }} hasta {{ fecha_fin }}</p>
+        {% endif %}
+        <div class="row">
+            <div class="col-md-6">
+                <p>Total ingresos: ${{ "{:,.2f}".format(total_general) }}</p>
+            </div>
+            <div class="col-md-6">
+                <p>Cirugías realizadas: {{ cantidad_cirugias }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-tachometer-alt me-2"></i>Dashboard Analítico
+                        </h3>
+                        <a href="/descargar_excel" class="btn btn-sm btn-light">
+                            <i class="fas fa-download me-1"></i> Exportar Datos
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="card-body">
+                    <!-- Tarjeta de Total General -->
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="card border-success shadow">
+                                <div class="card-body text-center">
+                                    <h5 class="card-title text-success">
+                                        <i class="fas fa-dollar-sign me-2"></i>Total General
+                                    </h5>
+                                    <h2 class="text-success" id="total-general-display">
+                                        ${{ "{:,.0f}".format(total_general) }}
+                                    </h2>
+                                    <p class="text-muted mb-0">Acumulado histórico</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos principales -->
+                    <div class="row">
+                        <!-- Gráfico Mensual -->
+                        <div class="col-lg-8 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-chart-line me-2 text-primary"></i>Ingresos Mensuales
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartMensual" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Gráfico Cirujanos -->
+                        <div class="col-lg-4 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-user-md me-2 text-primary"></i>Top 5 Cirujanos
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartCirujanos" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Segunda fila de gráficos -->
+                    <div class="row">
+                        <!-- Gráfico Clínicas -->
+                        <div class="col-lg-6 mb-4">
+                            <div class="card shadow-sm h-100">
+                                <div class="card-header bg-white">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-clinic-medical me-2 text-primary"></i>Top 5 Clínicas
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <canvas id="chartClinicas" height="300"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Gráfico de Casa Médica -->
+                        <div class="col-md-6 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header bg-info text-white">
+                                    <h5 class="mb-0">Distribución por Casa Médica</h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="chart-container" style="position: relative; height:300px;">
+                                        <canvas id="casaMedicaChart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pasar datos desde Flask a JavaScript - AGREGAR CASA MÉDICA -->
+<script id="mensual-data" type="application/json">{{ mensual|tojson }}</script>
+<script id="top-cirujanos-data" type="application/json">{{ top_cirujanos|tojson }}</script>
+<script id="top-clinicas-data" type="application/json">{{ top_clinicas|tojson }}</script>
+<script id="casa-medica-data" type="application/json">{{ por_casa_medica|tojson }}</script>
+<script id="total-general" type="application/json">{{ total_general|tojson }}</script>
+
+<!-- Scripts actualizados -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Configuración común
+    const formatCOP = (value) => new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0
+    }).format(value);
+
+    // Gráfico de Casa Médica - ACTUALIZADO
+    const casaMedicaData = JSON.parse(document.getElementById('casa-medica-data').textContent);
+    if (document.getElementById('casaMedicaChart') && casaMedicaData.length > 0) {
+        new Chart(document.getElementById('casaMedicaChart').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: casaMedicaData.map(item => item.Casa_Medica),
+                datasets: [{
+                    label: 'Valor Total',
+                    data: casaMedicaData.map(item => item.Valor),
+                    backgroundColor: [
+                        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
+                        '#EC4899', '#14B8A6', '#F97316', '#64748B', '#8B5CF6'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => formatCOP(context.raw)
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: formatCOP }
+                    }
+                }
+            }
+        });
+    }
+});  // <-- This was missing
+</script>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Verificación de datos
+    console.log("Datos del dashboard:", {
+        mensual: JSON.parse(document.getElementById('mensual-data').textContent),
+        cirujanos: JSON.parse(document.getElementById('top-cirujanos-data').textContent),
+        clinicas: JSON.parse(document.getElementById('top-clinicas-data').textContent),
+        total: JSON.parse(document.getElementById('total-general').textContent)
+    });
+
+    // Configuración común para gráficos
+    const formatCOP = (value) => new Intl.NumberFormat('es-CO', {
+        style: 'currency',
+        currency: 'COP',
+        maximumFractionDigits: 0
+    }).format(value);
+
+    // Gráfico Mensual
+if (document.getElementById('chartMensual')) {
+    // 1. Obtener y ordenar los datos (nuevo a viejo)
+    const mensualData = JSON.parse(document.getElementById('mensual-data').textContent);
+    mensualData.sort((a, b) => new Date(b.Mes) - new Date(a.Mes));
+    
+    // 2. Crear el gráfico con datos ordenados
+    new Chart(document.getElementById('chartMensual').getContext('2d'), {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: 'Ingresos Mensuales (Más recientes primero)',
+                data: mensualData.map(item => ({x: item.Mes, y: item.Valor})),
+                borderColor: '#3B82F6',
+                backgroundColor: '#93C5FD80',
+                borderWidth: 2,
+                tension: 0.3,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        unit: 'month',
+                        tooltipFormat: 'MMM YYYY'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: formatCOP
+                    }
+                }
+            }
+        }
+    });
+}
+    // Gráfico Cirujanos
+    if (document.getElementById('chartCirujanos')) {
+        new Chart(document.getElementById('chartCirujanos').getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: JSON.parse(document.getElementById('top-cirujanos-data').textContent)
+                    .map(item => item.Cirujano),
+                datasets: [{
+                    label: 'Ingresos',
+                    data: JSON.parse(document.getElementById('top-cirujanos-data').textContent)
+                        .map(item => item.Valor),
+                    backgroundColor: '#10B981'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: formatCOP
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // Gráfico Clínicas
+    if (document.getElementById('chartClinicas')) {
+        new Chart(document.getElementById('chartClinicas').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: JSON.parse(document.getElementById('top-clinicas-data').textContent)
+                    .map(item => item.Clínica),
+                datasets: [{
+                    data: JSON.parse(document.getElementById('top-clinicas-data').textContent)
+                        .map(item => item.Valor),
+                    backgroundColor: [
+                        '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right'
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

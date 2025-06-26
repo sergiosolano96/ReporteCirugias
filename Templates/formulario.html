@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Nuevo Registro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Nuevo Registro de Cirugía</h3>
+        </div>
+        
+        <div class="card-body">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data" id="registroForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label for="fecha" class="form-label">Fecha</label>
+                        <input type="date" class="form-control" id="fecha" name="fecha" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="paciente" class="form-label">Paciente</label>
+                        <input type="text" class="form-control" id="paciente" name="paciente" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="documento" class="form-label">Documento</label>
+                        <input type="text" class="form-control" id="documento" name="documento" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="cirujano" class="form-label">Cirujano</label>
+                        <input type="text" class="form-control" id="cirujano" name="cirujano" 
+                               list="cirujanos-list" autocomplete="off" required>
+                        <datalist id="cirujanos-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="clinica" class="form-label">Clínica</label>
+                        <input type="text" class="form-control" id="clinica" name="clinica" 
+                               list="clinicas-list" autocomplete="off" required>
+                        <datalist id="clinicas-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="procedimiento" class="form-label">Procedimiento</label>
+                        <input type="text" class="form-control" id="procedimiento" name="procedimiento" 
+                               list="procedimientos-list" autocomplete="off" required>
+                        <datalist id="procedimientos-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="valor" class="form-label">Valor</label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="valor" name="valor" 
+                                   min="0" step="0.01" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+    <label for="casa_medica" class="form-label">Casa Médica</label>
+    <input type="text" class="form-control" id="casa_medica" name="casa_medica" 
+           value="{{ request.form.casa_medica if request.form.casa_medica else '' }}">
+</div>
+
+                    <div class="col-md-6">
+                        <label for="documentos" class="form-label">Documentos Adjuntos</label>
+                        <input type="file" class="form-control" id="documentos" name="documentos" 
+                               multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png">
+                        <small class="text-muted">Formatos permitidos: PDF, DOC, DOCX, JPG, JPEG, PNG</small>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-save me-1"></i> Guardar
+                    </button>
+                    <a href="/dashboard" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar opciones dinámicas
+    fetch('/get_options')
+        .then(response => response.json())
+        .then(data => {
+            fillDatalist('cirujanos-list', data.cirujanos);
+            fillDatalist('clinicas-list', data.clinicas);
+            fillDatalist('procedimientos-list', data.procedimientos);
+        });
+
+    function fillDatalist(id, options) {
+        const datalist = document.getElementById(id);
+        datalist.innerHTML = '';
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            datalist.appendChild(opt);
+        });
+    }
+
+    // Validación del formulario antes de enviar
+    document.getElementById('registroForm').addEventListener('submit', function(e) {
+        const valor = parseFloat(document.getElementById('valor').value);
+        if (isNaN(valor) || valor <= 0) {
+            e.preventDefault();
+            alert('Por favor ingrese un valor válido mayor a cero');
+            document.getElementById('valor').focus();
+        }
+    });
+});
+</script>
+{% endblock %}

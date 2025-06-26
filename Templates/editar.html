@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Registro{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h3 class="mb-0"><i class="fas fa-edit me-2"></i>Editar Registro de Cirugía</h3>
+        </div>
+        
+        <div class="card-body">
+            {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+            {% endif %}
+            
+            <form method="POST" enctype="multipart/form-data">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Fecha</label>
+                        <input type="date" class="form-control" name="fecha" 
+                               value="{{ registro.Fecha }}" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Paciente</label>
+                        <input type="text" class="form-control" name="paciente" 
+                               value="{{ registro.Paciente }}" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Documento</label>
+                        <input type="text" class="form-control" name="documento" 
+                               value="{{ registro.Documento }}" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Cirujano</label>
+                        <input type="text" class="form-control" name="cirujano" 
+                               value="{{ registro.Cirujano }}" list="cirujanos-list" required>
+                        <datalist id="cirujanos-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Clínica</label>
+                        <input type="text" class="form-control" name="clinica" 
+                               value="{{ registro.Clínica }}" list="clinicas-list" required>
+                        <datalist id="clinicas-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Procedimiento</label>
+                        <input type="text" class="form-control" name="procedimiento" 
+                               value="{{ registro.Procedimiento }}" list="procedimientos-list" required>
+                        <datalist id="procedimientos-list"></datalist>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Valor</label>
+                        <input type="number" class="form-control" name="valor" 
+                               value="{{ registro.Valor }}" min="0" step="0.01" required>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Casa Médica</label>
+                         <input type="text" class="form-control" name="casa_medica" 
+                                value="{{ registro.Casa_Medica }}">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label">Documentos Actuales</label>
+                        {% if registro.Documentos %}
+                            <div class="mb-2">
+                                {% for doc in registro.Documentos.split(', ') %}
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <a href="/static/uploads/{{ doc }}" target="_blank" class="text-truncate" style="max-width: 70%">
+                                            <i class="fas fa-file me-1"></i>{{ doc }}
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDeleteDocument('{{ doc }}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No hay documentos adjuntos</p>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label class="form-label">Agregar más documentos</label>
+                        <input type="file" class="form-control" name="documentos" multiple>
+                        <small class="text-muted">Formatos permitidos: PDF, DOC, DOCX, JPG, JPEG, PNG</small>
+                    </div>
+                </div>
+                
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary me-2">
+                        <i class="fas fa-save me-1"></i> Guardar Cambios
+                    </button>
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-times me-1"></i> Cancelar
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{ super() }}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Cargar opciones dinámicas
+    fetch('/get_options')
+        .then(response => response.json())
+        .then(data => {
+            fillDatalist('cirujanos-list', data.cirujanos);
+            fillDatalist('clinicas-list', data.clinicas);
+            fillDatalist('procedimientos-list', data.procedimientos);
+        });
+
+    function fillDatalist(id, options) {
+        const datalist = document.getElementById(id);
+        datalist.innerHTML = '';
+        options.forEach(option => {
+            const opt = document.createElement('option');
+            opt.value = option;
+            datalist.appendChild(opt);
+        });
+    }
+
+    function confirmDeleteDocument(filename) {
+        if (confirm(`¿Eliminar el documento ${filename}?`)) {
+            // Implementar lógica para eliminar documento
+            alert('Funcionalidad de eliminación en desarrollo');
+        }
+    }
+});
+</script>
+{% endblock %}
