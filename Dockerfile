@@ -10,4 +10,4 @@ COPY . .
 # Crear la carpeta uploads si no existe
 RUN mkdir -p static/uploads
 
-CMD ["gunicorn", "--bind", "0.0.0.0:${PORT}", "app_web:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:$PORT", "app_web:app"]
